@@ -6,9 +6,16 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**',
       },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
   },
   output: 'standalone',
+  experimental: {
+    serverComponentsExternalPackages: ['mysql2'],
+  },
 };
 
 export default nextConfig;
