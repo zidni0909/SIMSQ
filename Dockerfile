@@ -1,14 +1,13 @@
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
+# Install dependencies (ALL deps needed for build)
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm ci
 
-# Rebuild the source code only when needed
+# Build the application
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -18,7 +17,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
 
-# Production image, copy all the files and run next
+# Production runner
 FROM base AS runner
 WORKDIR /app
 
@@ -28,12 +27,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy public assets
 COPY --from=builder /app/public ./public
 
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
+# Copy standalone build
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+
+# Copy static files (CSS, JS, images) - INI YANG PENTING
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
